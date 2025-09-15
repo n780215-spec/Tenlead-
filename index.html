@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>天麗清單測試版</title>
+
+  <!-- PWA 設定 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4CAF50"/>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="天麗測試">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 15px; }
+    h1 { color: #4CAF50; font-size: 20px; }
+    .btn { padding: 10px; background: #4CAF50; color: #fff; border: none; border-radius: 5px; margin: 5px 0; width: 100%; }
+    select, input { padding: 5px; margin: 5px 0; width: 100%; }
+    #result { margin-top: 15px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>天麗清單測試版</h1>
+
+  <label>會員等級：</label>
+  <select id="memberLevel">
+    <option value="會員">會員 (0%)</option>
+    <option value="專員">專員 (25%)</option>
+    <option value="主任">主任 (30%)</option>
+    <option value="經理">經理 (35%)</option>
+    <option value="寶石">寶石 (37%)</option>
+    <option value="鑽石">鑽石 (38%)</option>
+    <option value="金鑽">金鑽 (39%)</option>
+    <option value="顧問">顧問 (40%)</option>
+  </select>
+
+  <label>會員費用：</label>
+  <select id="feeType">
+    <option value="0">無</option>
+    <option value="1000">新會員 NT$1000</option>
+    <option value="500">續約會員 NT$500</option>
+  </select>
+
+  <h3>商品 A ($2000, 150PV)</h3>
+  <input type="number" id="qtyA" min="0" value="0">
+
+  <h3>商品 B ($3000, 250PV)</h3>
+  <input type="number" id="qtyB" min="0" value="0">
+
+  <button class="btn" onclick="generateSummary()">產生購買清單</button>
+
+  <div id="result">👉 請輸入數量後點擊產生清單</div>
+  <button id="pdfBtn" class="btn" style="display:none;" onclick="generatePDF()">下載 PDF</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    const bonusRate = {
+      "會員":0, "專員":25, "主任":30, "經理":35,
+      "寶石":37, "鑽石":38, "金鑽":39, "顧問":40
+    };
+
+    function generateSummary(){
+      const level=document.getElementById("memberLevel").value;
+      const fee=parseInt(document.getElementById("feeType").value);
+      const qtyA=parseInt(document.getElementById("qtyA").value)||0;
+      const qtyB=parseInt(document.getElementById("qtyB").value)||0;
+
+      let totalMoney=qtyA*2000+qtyB*3000+fee;
+      let totalPV=qtyA*150+qtyB*250;
+      let bonus=Math.floor(totalPV*bonusRate[level]/100);
+
+      let result=`<h3>🧾 購買清單</h3><ul>`;
+      if(qtyA>0) result+=`<li>商品 A x ${qtyA} = ${qtyA*2000} 元 / PV ${qtyA*150}</li>`;
+      if(qtyB>0) result+=`<li>商品 B x ${qtyB} = ${qtyB*3000} 元 / PV ${qtyB*250}</li>`;
+      if(fee>0) result+=`<li>會員費用 = ${fee} 元</li>`;
+      result+=`</ul>
+        <p>總金額：<b>${totalMoney}</b> 元</p>
+        <p>總 PV：<b>${totalPV}</b></p>
+        <p>會員等級：${level} (${bonusRate[level]}%)</p>
+        <p>業績獎金：<b>${bonus}</b> 元</p>`;
+
+      document.getElementById("result").innerHTML=result;
+      document.getElementById("pdfBtn").style.display="block";
+    }
+
+    function generatePDF(){
+      const element=document.getElementById("result");
+      html2pdf().from(element).set({
+        margin:10,
+        filename:"天麗購買清單.pdf",
+        html2canvas:{ scale:2 },
+        jsPDF:{ unit:"mm", format:"a4", orientation:"portrait" }
+      }).save();
+    }
+  </script>
+
+  <!-- 註冊 Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(()=>console.log("✅ Service Worker 註冊成功"))
+        .catch(err=>console.log("❌ Service Worker 失敗",err));
+    }
+  </script>
+</body>
+</html>
